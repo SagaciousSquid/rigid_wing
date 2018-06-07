@@ -1,33 +1,7 @@
 #include <Servo.h>
-
-// Pin for the wind vane potentiometer
-#define potPin A0
-
-// Pin for the trim tab servo
-#define servoPin 20
-
-// Wing state LEDs
-#define led1Pin 36
-#define led2Pin 37
-
-// Wifi connectivity status LED
-#define wifiLED 38
-
-// Power status LED
-#define powerLED 13
-
-// Pin for detecting battery voltage
-#define vInPin A2
-
-#define servoOffset 96 //offset to make 0 degrees in code equal to 0 degrees on the tab
-#define maxLiftAngle 30 //angle calculated for maximum lift from sail
-
-#define SSID "sailbot"
-#define PASS "Passphrase123"
-#define DST_IP "192.168.0.21"
-#define DST_PORT 3333
-#define THIS_DEVICE_IP "192.168.0.25"
-
+#include "pins.h"
+#include "credentials.h"
+#include "consts.h"
 
 int control = 0; //to enable direct control over tab angle
 int lift = 0; //0 to produce no lift 1 to produce lift
@@ -66,20 +40,20 @@ Servo servo;
 
 void setup() {
   //init
-  pinMode(potPin, INPUT);
-  pinMode(led1Pin, OUTPUT);
-  pinMode(led2Pin, OUTPUT);
-  pinMode(wifiLED, OUTPUT);
-  pinMode(powerLED, OUTPUT);
-  pinMode(vInPin, INPUT);
-  servo.attach(servoPin);
+  pinMode(POT_PIN, INPUT);
+  pinMode(PORTLED_PIN, OUTPUT);
+  pinMode(STARLED_PIN, OUTPUT);
+  pinMode(WIFILED_PIN, OUTPUT);
+  pinMode(POWERLED_PIN, OUTPUT);
+  pinMode(VIN_PIN, INPUT);
+  servo.attach(SERVO_PIN);
 
   // Initialize Everything
   initializeComs();
   initializeWifi();
 
   // Connect to the network
-  digitalWrite(wifiLED, LOW);
+  digitalWrite(WIFILED_PIN, LOW);
   connectToNetwork(SSID, PASS);
 
   LEDtimer.begin(blinkState, 916682);
@@ -87,7 +61,7 @@ void setup() {
 
   servo.write(servoOffset); //in place so lift starts at 0 degrees or neutral state
 
-  digitalWrite(powerLED, HIGH);// turn on power led
+  digitalWrite(POWERLED_PIN, HIGH);// turn on power led
 }
 
 void loop() {
@@ -103,7 +77,7 @@ void loop() {
     Serial.print(state);
   }
 
-  int vIn = analogRead(vInPin);
+  int vIn = analogRead(VIN_PIN);
 
   if (windSide) {
     servoAngle = tabAngle + 60;
@@ -127,7 +101,7 @@ void loop() {
 
   if (connectedTCP()) {
     connectionCount = 0;
-    digitalWrite(wifiLED, HIGH);
+    digitalWrite(WIFILED_PIN, HIGH);
 
     sendBoatMessage(sentAttackAngle, servoAngle, vIn);  //message sent to hull
     delay(10);                    //delay for message to send before recieving
@@ -405,26 +379,26 @@ void blinkState() {
     ledState = LOW;
   }
   if (!tcpConnection) {
-    digitalWrite(wifiLED, ledState);
+    digitalWrite(WIFILED_PIN, ledState);
   }
   if (lift) {
     if (windSide) {
-      digitalWrite(led1Pin, HIGH);
-      digitalWrite(led2Pin, LOW);
+      digitalWrite(PORTLED_PIN, HIGH);
+      digitalWrite(STARLED_PIN, LOW);
     }
     else {
-      digitalWrite(led2Pin, LOW);
-      digitalWrite(led1Pin, ledState);
+      digitalWrite(PORTLED_PIN, ledState);
+      digitalWrite(STARLED_PIN, LOW);
     }
   }
   if (drag) {
     if (windSide) {
-      digitalWrite(led2Pin, HIGH);
-      digitalWrite(led1Pin, LOW);
+      digitalWrite(PORTLED_PIN, LOW);
+      digitalWrite(STARLED_PIN, HIGH);
     }
     else {
-      digitalWrite(led1Pin, LOW);
-      digitalWrite(led2Pin, ledState);
+      digitalWrite(PORTLED_PIN, LOW);
+      digitalWrite(STARLED_PIN, ledState);
     }
   }
 }
@@ -468,13 +442,13 @@ void stateSet() {
 
 void servoControl() {
 
-  angleIn = analogRead(potPin); // reads angle of attack data
+  angleIn = analogRead(POT_PIN); // reads angle of attack data
   readAttackAngle = angleIn * 0.3442 - 122.93;
   //---------------------------------------------------------------------------------------------------
   //set for manual control
   if (control) {
-    digitalWrite(led1Pin, HIGH);
-    digitalWrite(led2Pin, HIGH);
+    digitalWrite(PORTLED_PIN, HIGH);
+    digitalWrite(STARLED_PIN, HIGH);
     servo.write(servoOffset + controlAngle);
   }
 
@@ -528,8 +502,8 @@ void servoControl() {
   //----------------------------------------------------------------------------------
   //minimum lift (windvane)
   if (!lift && !drag && !control) {
-    digitalWrite(led1Pin, LOW);
-    digitalWrite(led2Pin, LOW);
+    digitalWrite(PORTLED_PIN, LOW);
+    digitalWrite(STARLED_PIN, LOW);
 
     servo.write(servoOffset);
     /*
