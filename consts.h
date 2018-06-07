@@ -1,3 +1,6 @@
+#ifndef __CONSTS_H__
+#define __CONSTS_H__
+
 // Offset to make 0 degrees in code equal to 0 degrees on the tab
 #define servoOffset 96
 
@@ -10,3 +13,5 @@
 #define DST_PORT 3333
 // Static IP of the rigid wing
 #define THIS_DEVICE_IP "192.168.0.25"
+
+#endif
