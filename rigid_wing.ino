@@ -31,7 +31,6 @@ int connectionCount = 0;
 
 int ledState = LOW;
 unsigned long previousMillis = 0;
-volatile unsigned long blinkCount = 0; // use volatile for shared variables
 
 int servoAngle;
 
@@ -43,8 +42,6 @@ Servo servo;
 void setup() {
   //init
   pinMode(POT_PIN, INPUT);
-  pinMode(PORTLED_PIN, OUTPUT);
-  pinMode(STARLED_PIN, OUTPUT);
   pinMode(WIFILED_PIN, OUTPUT);
   pinMode(POWERLED_PIN, OUTPUT);
   pinMode(VIN_PIN, INPUT);
@@ -129,6 +126,7 @@ void loop() {
     openTCP(DST_IP, DST_PORT);    //if no message is recieved than there is no connection so the port is openend
     delay(50);
   }
+#define DEBUG_PRINT
 }
 
 void sendBoatMessage(int wind, int servoPos, int volt) {
@@ -209,31 +207,10 @@ bool readMessage(int timeout) {
 void blinkState() {
   if (ledState == LOW) {
     ledState = HIGH;
-    blinkCount = blinkCount + 1;  // increase when LED turns on
   } else {
     ledState = LOW;
   }
   tempBlinkWifiLEDWrapper(ledState);
-  if (lift) {
-    if (windSide) {
-      digitalWrite(PORTLED_PIN, HIGH);
-      digitalWrite(STARLED_PIN, LOW);
-    }
-    else {
-      digitalWrite(PORTLED_PIN, ledState);
-      digitalWrite(STARLED_PIN, LOW);
-    }
-  }
-  if (drag) {
-    if (windSide) {
-      digitalWrite(PORTLED_PIN, LOW);
-      digitalWrite(STARLED_PIN, HIGH);
-    }
-    else {
-      digitalWrite(PORTLED_PIN, LOW);
-      digitalWrite(STARLED_PIN, ledState);
-    }
-  }
 }
 
 void stateSet() {
@@ -280,8 +257,6 @@ void servoControl() {
   //---------------------------------------------------------------------------------------------------
   //set for manual control
   if (control) {
-    digitalWrite(PORTLED_PIN, HIGH);
-    digitalWrite(STARLED_PIN, HIGH);
     servo.write(servoOffset + controlAngle);
   }
 
@@ -335,9 +310,6 @@ void servoControl() {
   //----------------------------------------------------------------------------------
   //minimum lift (windvane)
   if (!lift && !drag && !control) {
-    digitalWrite(PORTLED_PIN, LOW);
-    digitalWrite(STARLED_PIN, LOW);
-
     servo.write(servoOffset);
     /*
       if (readAttackAngle < 2 && readAttackAngle > -2) {  }            // if angle of attack is within -2 to 2 do nothing

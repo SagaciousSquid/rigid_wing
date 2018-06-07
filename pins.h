@@ -7,10 +7,6 @@
 // Pin for the trim tab servo
 #define SERVO_PIN 20
 
-// Wing state LEDs
-#define PORTLED_PIN 36
-#define STARLED_PIN 37
-
 // Wifi connectivity status LED
 #define WIFILED_PIN 38
 
