@@ -11,7 +11,6 @@ int lift = 0; //0 to produce no lift 1 to produce lift
 int drag = 0;
 int windSide = 0; //0 for wind from port 1 for wind from starboard
 
-int heelIn; //reading from hull heel sensor
 int heelAngle = 0; //mapped heel angle, 0 degrees is straight up 90 would be on its side
 int maxHeelAngle = 30;//settable max heel angle
 
@@ -23,15 +22,11 @@ int controlAngle = 0; //manual angle set by boat
 
 int tabAngle = 0; //angle of tab relative to centered being 0
 
-int count = 0; //count to have leds blink
-
 int state;
 int printing = 0;
 int connectionCount = 0;
 
 int ledState = LOW;
-unsigned long previousMillis = 0;
-
 int servoAngle;
 
 IntervalTimer LEDtimer;

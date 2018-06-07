@@ -45,8 +45,6 @@ bool connectToNetwork(String ssid, String password) {
   Serial.println("Password is " + password);
   #endif
 
-  // Maybe search for network to see it it's available first?
-
   // Set the operating mode to Client
   // Client = 1, AP = 2, Client and AP = 3
   sendMessageToESP("AT+CWMODE=1");
