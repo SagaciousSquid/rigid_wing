@@ -1,21 +1,26 @@
 #include <Servo.h>
 
-#define servoOffset 96 //offset to make 0 degrees in code equal to 0 degrees on the tab
-#define maxLiftAngle 30 //angle calculated for maximum lift from sail
-
-//Pins for devices
+// Pin for the wind vane potentiometer
 #define potPin A0
+
+// Pin for the trim tab servo
 #define servoPin 20
-#define liftPin 2
-#define dragPin 6
-#define windSidePin 3
+
+// Wing state LEDs
 #define led1Pin 36
 #define led2Pin 37
-#define controlPin 11
-#define angleControlPin A3
+
+// Wifi connectivity status LED
 #define wifiLED 38
+
+// Power status LED
 #define powerLED 13
+
+// Pin for detecting battery voltage
 #define vInPin A2
+
+#define servoOffset 96 //offset to make 0 degrees in code equal to 0 degrees on the tab
+#define maxLiftAngle 30 //angle calculated for maximum lift from sail
 
 #define SSID "sailbot"
 #define PASS "Passphrase123"
@@ -28,7 +33,6 @@ int control = 0; //to enable direct control over tab angle
 int lift = 0; //0 to produce no lift 1 to produce lift
 int drag = 0;
 int windSide = 0; //0 for wind from port 1 for wind from starboard
-bool manual = false;
 
 int heelIn; //reading from hull heel sensor
 int heelAngle = 0; //mapped heel angle, 0 degrees is straight up 90 would be on its side
@@ -63,11 +67,6 @@ Servo servo;
 void setup() {
   //init
   pinMode(potPin, INPUT);
-  pinMode(liftPin, INPUT);
-  pinMode(dragPin, INPUT);
-  pinMode(windSidePin, INPUT);
-  pinMode(controlPin, INPUT);
-  pinMode(angleControlPin, INPUT);
   pinMode(led1Pin, OUTPUT);
   pinMode(led2Pin, OUTPUT);
   pinMode(wifiLED, OUTPUT);
@@ -116,11 +115,13 @@ void loop() {
 
   sentAttackAngle = (360 + readAttackAngle) % 360;
 
-  //Serial.print("  Angle of Attack:");
-  //Serial.print(readAttackAngle);
+  if (printing) {
+    Serial.print("  Angle of Attack:");
+    Serial.print(readAttackAngle);
 
-  //Serial.print("  Servo Angle:");
-  //Serial.println(tabAngle);
+    Serial.print("  Servo Angle:");
+    Serial.println(tabAngle);
+  }
 
   stateSet();
 
@@ -131,15 +132,15 @@ void loop() {
     sendBoatMessage(sentAttackAngle, servoAngle, vIn);  //message sent to hull
     delay(10);                    //delay for message to send before recieving
 
-    if (readMessage(250)) {
-      //Serial.print("S: ");
-      //Serial.print(state);
-      //Serial.print(", A:");
-      //Serial.print(heelAngle);
-      //Serial.print(", B:");
-      //Serial.print(maxHeelAngle);
-      //Serial.print(", C:");
-      //Serial.println(controlAngle);
+    if (readMessage(250) && printing) {
+      Serial.print("S: ");
+      Serial.print(state);
+      Serial.print(", A:");
+      Serial.print(heelAngle);
+      Serial.print(", B:");
+      Serial.print(maxHeelAngle);
+      Serial.print(", C:");
+      Serial.println(controlAngle);
     }
 
   } else {
@@ -175,7 +176,6 @@ String addZerosToString(int n, int z) {
   }
 
   int s = 10;
-  int ii = 0;
 
   while (s < pow(10, z)) {
     if (s >= n) {
@@ -222,26 +222,6 @@ int initializeWifi() {
   }
 }
 
-
-
-// This scans for networks and returns a list of networks
-int scanForNetworks() {
-  // Send the command to print all nearby networks
-  sendMessageToESP("AT+CWLAP");
-
-  // TODO: print out all networks
-  return 0;
-}
-
-
-
-// This searches for networks and returns true if the selected network is found
-int searchForNetwork(String networkName) {
-  return 0;
-}
-
-
-
 // This attempts to connect to a network. If it is succesful, True is returned
 bool connectToNetwork(String ssid, String password) {
 
@@ -278,17 +258,6 @@ bool connectToNetwork(String ssid, String password) {
     return false;
   }
 }
-
-
-
-// Get ip address if it's connected to a network
-String getIP() {
-  sendMessageToESP("AT_CIFSR");
-
-  // Sort out IP address
-  return "0.0.0.0";
-}
-
 
 
 // Open a TCP connection
@@ -335,6 +304,7 @@ void sendTCPMessage(String msg) {
 
 
 // Close the current TCP connection
+// #TODO Unused! Should this be implemented somewhere?
 int closeTCP() {
   sendMessageToESP("AT+CIPCLOSE");
 
@@ -359,11 +329,6 @@ bool connectedTCP() {
     return false;
   }
 }
-
-
-
-
-
 
 
 bool readMessage(int timeout) {
@@ -400,17 +365,6 @@ bool readMessage(int timeout) {
 
   return recievedNewData;
 }
-
-
-
-
-
-
-
-
-
-
-
 
 void sendMessageToESP(String commandToSend) {
   Serial4.println(commandToSend);
@@ -590,4 +544,3 @@ void servoControl() {
     */
   }
 }
-
