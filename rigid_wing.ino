@@ -1,7 +1,10 @@
+#define DEBUG_PRINT
+
 #include <Servo.h>
 #include "pins.h"
 #include "credentials.h"
 #include "consts.h"
+#include "esp8266.h"
 
 int control = 0; //to enable direct control over tab angle
 int lift = 0; //0 to produce no lift 1 to produce lift
@@ -24,7 +27,6 @@ int count = 0; //count to have leds blink
 
 int state;
 int printing = 0;
-int tcpConnection = 0;
 int connectionCount = 0;
 
 int ledState = LOW;
@@ -129,10 +131,6 @@ void loop() {
   }
 }
 
-
-
-
-
 void sendBoatMessage(int wind, int servoPos, int volt) {
   String msg = "[";
   msg += addZerosToString(wind, 3) + ",";
@@ -161,8 +159,6 @@ String addZerosToString(int n, int z) {
   return result;
 }
 
-
-
 // This initializes the serial buses
 int initializeComs() {
   Serial.begin(115200);
@@ -172,138 +168,6 @@ int initializeComs() {
 
   return 0;
 }
-
-
-
-// This initializes the ESP8266 module
-int initializeWifi() {
-
-  // Reset the module
-  sendMessageToESP("AT+RST");
-
-  if (printing) Serial.println("Resetting Wifi Module");
-
-  // wait for a "ready" command
-  bool reset_successful = waitForStringSerial4("ready", 3000);
-
-  if (reset_successful) {
-    if (printing) Serial.println("Wifi Reset Successfully");
-    return 0;
-
-  } else {
-    if (printing) Serial.println("Wifi Reset Failed");
-    return 1;
-  }
-}
-
-// This attempts to connect to a network. If it is succesful, True is returned
-bool connectToNetwork(String ssid, String password) {
-
-  if (printing) {
-    Serial.println("Attempting to connect to " + ssid);
-    Serial.println("Password is " + password);
-  }
-
-  // Maybe search for network to see it it's available first?
-
-  // Set the operating mode to Client
-  // Client = 1, AP = 2, Client and AP = 3
-  sendMessageToESP("AT+CWMODE=1");
-
-  // Build the message to connect to the given ssid with the password
-  String cmd = "AT+CWJAP=\"" + ssid + "\",\"" + password + "\"";
-  sendMessageToESP(cmd);
-
-  // wait for a "OK" command
-  bool connection_successful = waitForStringSerial4("OK", 3000);
-
-  cmd = "AT+CIPSTA=\"" THIS_DEVICE_IP "\"";
-  sendMessageToESP(cmd);
-
-  // wait for a "OK" command
-  connection_successful = connection_successful && waitForStringSerial4("OK", 3000);
-
-  if (connection_successful) {
-    if (printing) Serial.println("Connection Successful");
-    return true;
-
-  } else {
-    if (printing) Serial.println("Connection Failed");
-    return false;
-  }
-}
-
-
-// Open a TCP connection
-// A returned value of True indicates it was successful
-boolean openTCP(String ip, int port) {
-  // Set transparent mode to 1 so that messages recieved will be sent directly to serial
-  // Set transparent mode to 0
-  //  sendMessageToESP("AT+CIPMODE=0", printing);
-
-  // build command
-  String cmd = "AT+CIPSTART=\"TCP\",\"" + ip + "\"," + port;
-
-  sendMessageToESP(cmd);
-  //  Serial.println(cmd);
-
-  // wait for a "OK" command
-  bool connection_successful = waitForStringSerial4("OK", 3000);
-
-  if (connection_successful) {
-    if (printing) Serial.println("TCP Connection to " + ip + " port number " + String(port) + " successful");
-    return true;
-  } else {
-    if (printing) Serial.println("TCP Connection to " + ip + " port number " + String(port) + " failed");
-    return false;
-  }
-}
-
-
-
-// Send a message over TCP()
-void sendTCPMessage(String msg) {
-
-  // build initial message
-  String instructionToSend = "AT+CIPSEND=" + String(msg.length());
-
-  if (printing) Serial.println("Sending message: " + msg);
-
-  // Send the message
-  sendMessageToESP(instructionToSend);
-  delay(20);
-  sendMessageToESP(msg);
-}
-
-
-
-// Close the current TCP connection
-// #TODO Unused! Should this be implemented somewhere?
-int closeTCP() {
-  sendMessageToESP("AT+CIPCLOSE");
-
-  if (printing) Serial.println("TCP Closed");
-
-  return 0;
-}
-
-
-
-// Return true if connected to TCP, false otherwise
-bool connectedTCP() {
-  sendMessageToESP("AT+CIPSTATUS");
-
-  if (waitForStringSerial4("STATUS:3", 500)) {
-    if (printing) Serial.println("TCP still connected");
-    tcpConnection = 1;
-    return true;
-  } else {
-    if (printing) Serial.println("TCP connection lost");
-    tcpConnection = 0;
-    return false;
-  }
-}
-
 
 bool readMessage(int timeout) {
   int start_time = millis();
@@ -340,36 +204,7 @@ bool readMessage(int timeout) {
   return recievedNewData;
 }
 
-void sendMessageToESP(String commandToSend) {
-  Serial4.println(commandToSend);
 
-  if (printing >= 2) Serial.println("--- " + commandToSend);
-}
-
-
-
-// This method scans the input from Serial4 for a specific key
-// If this key is found before the timeout, true is returned.
-// Othertime false is returned
-bool waitForStringSerial4(String key, int timeout) {
-
-  int start_time = millis();
-
-  while (millis() < start_time + timeout) {
-    if (Serial4.available()) {
-      String data = Serial4.readString();
-      // Serial.println(data);
-
-      for (int i = 0; i < data.length() - key.length(); i++) {
-        if (data.substring(i, i + key.length()) == key) {
-          return true;
-        }
-      }
-    }
-  }
-
-  return false;
-}
 
 void blinkState() {
   if (ledState == LOW) {
@@ -378,9 +213,7 @@ void blinkState() {
   } else {
     ledState = LOW;
   }
-  if (!tcpConnection) {
-    digitalWrite(WIFILED_PIN, ledState);
-  }
+  tempBlinkWifiLEDWrapper(ledState);
   if (lift) {
     if (windSide) {
       digitalWrite(PORTLED_PIN, HIGH);
