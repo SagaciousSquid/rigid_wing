@@ -4,7 +4,7 @@
 #include "pins.h"
 #include "credentials.h"
 #include "consts.h"
-#include "esp8266.h"
+#include "wifi.h"
 
 int control = 0; //to enable direct control over tab angle
 int lift = 0; //0 to produce no lift 1 to produce lift

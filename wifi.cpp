@@ -1,4 +1,4 @@
-#include "esp8266.h"
+#include "wifi.h"
 
 int tcpConnection = 0;
 
