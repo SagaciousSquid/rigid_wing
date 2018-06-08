@@ -23,7 +23,7 @@ int controlAngle = 0; //manual angle set by boat
 int tabAngle = 0; //angle of tab relative to centered being 0
 
 int state;
-int printing = 0;
+int printing = 1;
 int connectionCount = 0;
 
 int ledState = LOW;
@@ -36,11 +36,18 @@ Servo servo;
 
 void setup() {
   //init
-  pinMode(POT_PIN, INPUT);
+  //pinMode(POT_PIN, INPUT);
   pinMode(WIFILED_PIN, OUTPUT);
+  pinMode(WIFILED_GND_PIN, OUTPUT);
   pinMode(POWERLED_PIN, OUTPUT);
-  pinMode(VIN_PIN, INPUT);
+  pinMode(POWERLED_GND_PIN, OUTPUT);
+  //pinMode(VIN_PIN, INPUT);
   servo.attach(SERVO_PIN);
+
+  digitalWrite(POWERLED_GND_PIN, LOW);
+  digitalWrite(WIFILED_GND_PIN, LOW);
+
+  digitalWrite(POWERLED_PIN, HIGH);// turn on power led
 
   // Initialize Everything
   initializeComs();
@@ -49,13 +56,19 @@ void setup() {
   // Connect to the network
   digitalWrite(WIFILED_PIN, LOW);
   connectToNetwork(SSID, PASS);
+  digitalWrite(WIFILED_PIN, HIGH);// turn on power led
 
   LEDtimer.begin(blinkState, 916682);
   servoTimer.begin(servoControl, 50000);
 
   servo.write(servoOffset); //in place so lift starts at 0 degrees or neutral state
 
-  digitalWrite(POWERLED_PIN, HIGH);// turn on power led
+  
+
+
+
+  // LEDs are wired to digial pins for their ground reference to save board space
+
 }
 
 void loop() {
@@ -155,7 +168,9 @@ String addZerosToString(int n, int z) {
 // This initializes the serial buses
 int initializeComs() {
   Serial.begin(115200);
-  Serial4.begin(115200);
+  //while(!Serial){}
+  Serial2.begin(115200);
+  while(!Serial2){}
 
   if (printing) Serial.println("Communication Initialized");
 
@@ -171,8 +186,8 @@ bool readMessage(int timeout) {
   //  "[1,180,180,100]"
 
   while (millis() < start_time + timeout) {
-    if (Serial4.available()) {
-      data += Serial4.readString();
+    if (Serial2.available()) {
+      data += Serial2.readString();
       Serial.println(data);
 
       for (int i = 0; i < data.length(); i++) {
@@ -248,7 +263,7 @@ void stateSet() {
 void servoControl() {
 
   angleIn = analogRead(POT_PIN); // reads angle of attack data
-  readAttackAngle = angleIn * 0.3442 - 122.93;
+  readAttackAngle = (float)(angleIn-947) * 0.3442;
   //---------------------------------------------------------------------------------------------------
   //set for manual control
   if (control) {

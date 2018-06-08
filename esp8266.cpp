@@ -3,7 +3,7 @@
 int tcpConnection = 0;
 
 void sendMessageToESP(String commandToSend) {
-  Serial4.println(commandToSend);
+  Serial2.println(commandToSend);
 
   #ifdef DEBUG_PRINT
   Serial.println("--- " + commandToSend);
@@ -20,7 +20,7 @@ int initializeWifi() {
   #endif
 
   // wait for a "ready" command
-  bool reset_successful = waitForStringSerial4("ready", 3000);
+  bool reset_successful = waitForStringSerial2("ready", 3000);
 
   if (reset_successful) {
     #ifdef DEBUG_PRINT
@@ -54,13 +54,13 @@ bool connectToNetwork(String ssid, String password) {
   sendMessageToESP(cmd);
 
   // wait for a "OK" command
-  bool connection_successful = waitForStringSerial4("OK", 3000);
+  bool connection_successful = waitForStringSerial2("OK", 3000);
 
   cmd = String("AT+CIPSTA=\"") + THIS_DEVICE_IP + "\"";
   sendMessageToESP(cmd);
 
   // wait for a "OK" command
-  connection_successful = connection_successful && waitForStringSerial4("OK", 3000);
+  connection_successful = connection_successful && waitForStringSerial2("OK", 3000);
 
   if (connection_successful) {
     #ifdef DEBUG_PRINT
@@ -90,7 +90,7 @@ boolean openTCP(String ip, int port) {
   //  Serial.println(cmd);
 
   // wait for a "OK" command
-  bool connection_successful = waitForStringSerial4("OK", 3000);
+  bool connection_successful = waitForStringSerial2("OK", 3000);
 
   if (connection_successful) {
     #ifdef DEBUG_PRINT
@@ -109,7 +109,7 @@ boolean openTCP(String ip, int port) {
 bool connectedTCP() {
   sendMessageToESP("AT+CIPSTATUS");
 
-  if (waitForStringSerial4("STATUS:3", 500)) {
+  if (waitForStringSerial2("STATUS:3", 500)) {
     #ifdef DEBUG_PRINT
     Serial.println("TCP still connected");
     #endif
@@ -153,17 +153,17 @@ int closeTCP() {
   return 0;
 }
 
-// This method scans the input from Serial4 for a specific key
+// This method scans the input from Serial2 for a specific key
 // If this key is found before the timeout, true is returned.
 // Othertime false is returned
-bool waitForStringSerial4(String key, int timeout) {
+bool waitForStringSerial2(String key, int timeout) {
 
-  int start_time = millis();
+  unsigned long start_time = millis();
 
   while (millis() < start_time + timeout) {
-    if (Serial4.available()) {
-      String data = Serial4.readString();
-      // Serial.println(data);
+    if (Serial2.available()) {
+      String data = Serial2.readString();
+      Serial.println(data);
 
       for (int i = 0; i < data.length() - key.length(); i++) {
         if (data.substring(i, i + key.length()) == key) {
